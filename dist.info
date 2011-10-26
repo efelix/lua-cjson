@@ -1,0 +1,14 @@
+--- This file is part of LuaDist project
+
+name = "lua-cjson"
+version = "1.0.3"
+
+desc = "Lua CJSON provides fast JSON parsing and encoding support for Lua."
+author = "Mark Pulford"
+license = "MIT"
+url = "http://www.kyne.com.au/~mark/software/lua-cjson.php"
+maintainer = "Félix A.A."
+
+depends = {
+	"lua ~>5.1"
+}
