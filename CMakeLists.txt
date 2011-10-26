@@ -8,7 +8,9 @@ project ( lua-cjson C )
 cmake_minimum_required ( VERSION 2.6 )
 include ( dist.cmake )
 
+
 # lua-cjson modules
+add_definitions ( -DVERSION="1.0.3" )
 install_lua_module( cjson lua_cjson.c strbuf.c )
 
 
