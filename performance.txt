@@ -6,7 +6,7 @@ The following JSON packages for Lua were tested:
 - DKJSON 1.0: One of the fastest pure Lua JSON implementations.
 - LuaJSON 1.0: A mixed Lua/C JSON implementation using LPeg.
 - Lua YAJL 2.0: A Lua wrapper for the YAJL JSON library.
-- CSJON 1.0.2: Pure C.
+- CJSON 1.0.2: Pure C.
 
 LuaJSON 1.2.2 appeared to be slower during initial testing, so 1.0 was
 used instead.
