@@ -57,6 +57,8 @@ build and install the module:
 Note: Some Solaris platforms are missing isinf(). You can work around
       this bug by adding -DMISSING_ISINF to CFLAGS in the Makefile.
 
+Note: For Lua 5.2. You may got a 'undefined symbol: luaL_register' error.
+      You can adding -DLUA_COMPAT_MODULE to CFLAGS in the Makefile to fix it.
 
 RPM
 ---
