@@ -1,6 +1,6 @@
-/* strbuf - string buffer routines
+/* strbuf - String buffer routines
  *
- * Copyright (c) 2010-2011  Mark Pulford <mark@kyne.com.au>
+ * Copyright (c) 2010-2012  Mark Pulford <mark@kyne.com.au>
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -22,6 +22,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "pch.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -29,7 +30,7 @@
 
 #include "strbuf.h"
 
-void die(const char *fmt, ...)
+static void die(const char *fmt, ...)
 {
     va_list arg;
 
@@ -58,27 +59,27 @@ void strbuf_init(strbuf_t *s, int len)
     s->reallocs = 0;
     s->debug = 0;
 
-    s->buf = malloc(size);
+    s->buf = (char *)malloc(size);
     if (!s->buf)
         die("Out of memory");
-
-    strbuf_ensure_null(s);
+    else
+        strbuf_ensure_null(s);
 }
 
 strbuf_t *strbuf_new(int len)
 {
     strbuf_t *s;
+    s = (strbuf_t*)malloc(sizeof(strbuf_t));
+    if ( s )
+    {
+        strbuf_init(s, len);
+        /* Dynamic strbuf allocation / deallocation */
+        s->dynamic = 1;
+        return s;
+    }
 
-    s = malloc(sizeof(strbuf_t));
-    if (!s)
-        die("Out of memory");
-
-    strbuf_init(s, len);
-
-    /* Dynamic strbuf allocation / deallocation */
-    s->dynamic = 1;
-
-    return s;
+    die("Out of memory");
+    return NULL;
 }
 
 void strbuf_set_increment(strbuf_t *s, int increment)
@@ -94,8 +95,8 @@ void strbuf_set_increment(strbuf_t *s, int increment)
 static inline void debug_stats(strbuf_t *s)
 {
     if (s->debug) {
-        fprintf(stderr, "strbuf(%lx) reallocs: %d, length: %d, size: %d\n",
-                (long)s, s->reallocs, s->length, s->size);
+        fprintf(stderr, "strbuf(%px) reallocs: %d, length: %d, size: %d\n",
+                (void*)s, s->reallocs, s->length, s->size);
     }
 }
 
@@ -168,14 +169,15 @@ void strbuf_resize(strbuf_t *s, int len)
     newsize = calculate_new_size(s, len);
 
     if (s->debug > 1) {
-        fprintf(stderr, "strbuf(%lx) resize: %d => %d\n",
-                (long)s, s->size, newsize);
+        fprintf(stderr, "strbuf(%px) resize: %d => %d\n",
+                (void*)s, s->size, newsize);
     }
 
     s->size = newsize;
-    s->buf = realloc(s->buf, s->size);
-    if (!s->buf)
+   void * new_ptr = realloc(s->buf, s->size);
+    if (!new_ptr)
         die("Out of memory");
+    s->buf = (char*)new_ptr;
     s->reallocs++;
 }
 
@@ -212,37 +214,6 @@ void strbuf_append_fmt(strbuf_t *s, int len, const char *fmt, ...)
 
     if (fmt_len < 0)
         die("BUG: Unable to convert number");  /* This should never happen.. */
-
-    s->length += fmt_len;
-}
-
-/* strbuf_append_fmt_retry() can be used when the there is no known
- * upper bound for the output string. */
-void strbuf_append_fmt_retry(strbuf_t *s, const char *fmt, ...)
-{
-    va_list arg;
-    int fmt_len, try;
-    int empty_len;
-
-    /* If the first attempt to append fails, resize the buffer appropriately
-     * and try again */
-    for (try = 0; ; try++) {
-        va_start(arg, fmt);
-        /* Append the new formatted string */
-        /* fmt_len is the length of the string required, excluding the
-         * trailing NULL */
-        empty_len = strbuf_empty_length(s);
-        /* Add 1 since there is also space to store the terminating NULL. */
-        fmt_len = vsnprintf(s->buf + s->length, empty_len + 1, fmt, arg);
-        va_end(arg);
-
-        if (fmt_len <= empty_len)
-            break;  /* SUCCESS */
-        if (try > 0)
-            die("BUG: length of formatted string changed");
-
-        strbuf_resize(s, s->length + fmt_len);
-    }
 
     s->length += fmt_len;
 }
