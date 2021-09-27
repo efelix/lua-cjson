@@ -29,5 +29,6 @@
 
  // Converts int64 to string, returns length of string, or 0 if error.
 extern int itoa_vitaut(INT64 val, char* dst, size_t dsize);
+extern int is_IEEE754_64Bit_double_AnInt(double val);
 
 #endif // ! ITOA_H

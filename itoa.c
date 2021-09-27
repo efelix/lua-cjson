@@ -65,3 +65,22 @@ int itoa_vitaut(INT64 val, char* dst, size_t dsize)
     }
     return 0;
 }
+
+
+/*
+ *  Bit  63      Sign
+ *  Bits 62-52   Exponent
+ *  Bits 51-00   Mantissa
+ */
+int is_IEEE754_64Bit_double_AnInt(double val)
+{
+    // Put the value in an long long so we can do bitwise operations.
+    uint64_t  val64bit = *((uint64_t*)(&val));
+
+    // Remember to subtract 1023 from the exponent (to get real value)
+    int  exponent = ((val64bit >> 52) & 0x7FF) - 1023;
+    int bitsInFraction = 52 - exponent;
+    uint64_t mask = exponent < 0 ? 0x7FFFFFFFFFFFFFFFLL : exponent > 52 ? 0x00 : (1LL << bitsInFraction) - 1;
+    return !(val64bit & mask);
+}
+

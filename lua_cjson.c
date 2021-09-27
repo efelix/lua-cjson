@@ -687,6 +687,17 @@ static int json_append_number_as_base64(strbuf_t* json, bytemap64 nb, const char
     return (len > 0);
 }
 
+
+static void json_append_int64_number(INT64 num, lua_State* l, json_config_t* cfg, strbuf_t* json, int lindex)
+{
+    strbuf_ensure_empty_length(json, ITOA_BUFSIZE); /* max length of int64 is 22 */
+    int len = itoa_vitaut(num, strbuf_empty_ptr(json), ITOA_BUFSIZE);
+    if (len > 0)
+        strbuf_extend_length(json, len);
+    else
+        json_encode_exception(l, cfg, json, lindex, "itoa fail!");
+}
+
 static void json_append_number(lua_State* l, json_config_t* cfg,
     strbuf_t* json, int lindex)
 {
@@ -695,30 +706,29 @@ static void json_append_number(lua_State* l, json_config_t* cfg,
 #if LUA_VERSION_NUM >= 503
     if (lua_isinteger(l, lindex)) {
         lua_Integer num = lua_tointeger(l, lindex);
-        strbuf_ensure_empty_length(json, ITOA_BUFSIZE); /* max length of int64 is 22 */
-        len = itoa_vitaut(num, strbuf_empty_ptr(json), ITOA_BUFSIZE);
-        if (len > 0)
-            strbuf_extend_length(json, len);
-        else
-            json_encode_exception(l, cfg, json, lindex, "itoa fail!");
+        json_append_int64_number(num, l, cfg, json, lindex);
         return;
     }
 #endif
+
+    double num = lua_tonumber(l, lindex);
+    if (is_IEEE754_64Bit_double_AnInt(num))
+    {
+        INT64 asInt = (INT64)num;
+        json_append_int64_number(num, l, cfg, json, lindex);
+        return;
+    }
 
     if (cfg->encode_numbers_as_base64)
     {
         //int buf_len = base64_req_len(sizeof(nb));
         // base64 encoded value should be at least: 17 chars = 12chars + header 2 chars + 2x'"' + "\0"
         // "L=0123456789AB\0" or "D=0123456789AB\0"
-        bytemap64 nb;
-        nb.as_double = lua_tonumber(l, lindex);
         const char header[] = "\"D=";
-        if (!json_append_number_as_base64(json, nb, header, sizeof(header) - 1))
+        if (!json_append_number_as_base64(json, *((bytemap64*)&num), header, sizeof(header) - 1))
             json_encode_exception(l, cfg, json, lindex, "json_append_number_as_base64 fail!");
         return;
     }
-
-    double num = lua_tonumber(l, lindex);
 
     if (cfg->encode_invalid_numbers == 0) {
         /* Prevent encoding invalid numbers */
